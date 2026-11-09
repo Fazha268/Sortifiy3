@@ -15,42 +15,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inisialisasi SQLite yang aman untuk Serverless Vercel
-let db = null;
-const isVercel = process.env.VERCEL === '1';
-
-try {
-  const sqlite3 = require('sqlite3').verbose();
-  const dbFile = isVercel ? path.join('/tmp', 'database.sqlite') : path.join(__dirname, 'database.sqlite');
-  
-  db = new sqlite3.Database(dbFile, (err) => {
-    if (err) console.error('Gagal terhubung ke SQLite:', err.message);
-    else console.log('Berhasil terhubung ke database SQLite di:', dbFile);
-  });
-
-  db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nama TEXT NOT NULL,
-      kelas TEXT NOT NULL,
-      total_poin INTEGER DEFAULT 0
-    )`);
-
-    db.run(`CREATE TABLE IF NOT EXISTS quiz_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      score INTEGER,
-      total_soal INTEGER,
-      poin INTEGER,
-      tanggal TEXT,
-      FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
-  });
-} catch (e) {
-  console.log("Berjalan dalam mode tanpa database file lokal (Serverless fallback).");
-}
+// Penyimpanan Memori Sementara (Aman & Anti-Crash untuk Vercel Serverless)
+let usersMemory = [
+  { id: 1, nama: "Demo User", kelas: "Informatika", total_poin: 100 }
+];
+let quizHistoryMemory = [];
 
 // Konfigurasi Multer Upload (Aman untuk Vercel /tmp)
+const isVercel = process.env.VERCEL === '1';
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'public', 'uploads');
@@ -70,34 +42,18 @@ app.post('/api/login', (req, res) => {
   const { nama, kelas } = req.body;
   if (!nama || !kelas) return res.status(400).json({ success: false, message: 'Nama dan kelas wajib diisi.' });
   
-  if (!db) {
-    return res.json({ success: true, data: { id: 1, nama, kelas, total_poin: 100 } });
+  let user = usersMemory.find(u => u.nama === nama && u.kelas === kelas);
+  if (!user) {
+    user = { id: usersMemory.length + 1, nama, kelas, total_poin: 0 };
+    usersMemory.push(user);
   }
-
-  db.get('SELECT * FROM users WHERE nama = ? AND kelas = ?', [nama, kelas], (err, row) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    if (row) {
-      res.json({ success: true, data: row });
-    } else {
-      db.run('INSERT INTO users (nama, kelas, total_poin) VALUES (?, ?, 0)', [nama, kelas], function(err) {
-        if (err) return res.status(500).json({ success: false, message: err.message });
-        res.json({ success: true, data: { id: this.lastID, nama, kelas, total_poin: 0 } });
-      });
-    }
-  });
+  res.json({ success: true, data: user });
 });
 
 // 2. Endpoint Leaderboard
 app.get('/api/leaderboard', (req, res) => {
-  if (!db) {
-    return res.json([
-      { id: 1, nama: "Demo User", kelas: "Informatika", total_poin: 150 }
-    ]);
-  }
-  db.all('SELECT id, nama, kelas, total_poin FROM users ORDER BY total_poin DESC', [], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    res.json(rows);
-  });
+  const sortedUsers = [...usersMemory].sort((a, b) => b.total_poin - a.total_poin);
+  res.json(sortedUsers);
 });
 
 // 3. Endpoint Smart Scan AI
@@ -148,10 +104,9 @@ app.post('/api/scan', upload.single('image'), async (req, res) => {
     const finalKategori = aiResult.kategori || "Sampah Anorganik - Umum";
     const finalDeskripsi = aiResult.deskripsi || "1. Bersihkan objek.\n2. Kelola sesuai jenisnya.";
 
-    if (db && userId) {
-      db.run('UPDATE users SET total_poin = total_poin + ? WHERE id = ?', [finalPoin, userId], (err) => {
-        if (err) console.error("Gagal update poin user.");
-      });
+    if (userId) {
+      const user = usersMemory.find(u => u.id == userId);
+      if (user) user.total_poin += finalPoin;
     }
 
     res.json({ success: true, kategori: finalKategori, poin: finalPoin, deskripsi: finalDeskripsi });
@@ -165,41 +120,33 @@ app.post('/api/add-quiz-points', (req, res) => {
   const { user_id, score, total_soal, poin } = req.body;
   if (poin === undefined) return res.status(400).json({ success: false, message: 'Data tidak valid.' });
 
-  if (!db || !user_id) {
-    return res.json({ success: true, message: 'Poin berhasil disimpan (Demo mode).' });
-  }
-
   const tanggal = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 
-  db.run('INSERT INTO quiz_history (user_id, score, total_soal, poin, tanggal) VALUES (?, ?, ?, ?, ?)', 
-    [user_id, score || 0, total_soal || 5, poin, tanggal], (err) => {
-      if (err) console.error("Gagal simpan riwayat kuis:", err.message);
-  });
+  if (user_id) {
+    quizHistoryMemory.unshift({ user_id, score: score || 0, total_soal: total_soal || 5, poin, tanggal });
+    const user = usersMemory.find(u => u.id == user_id);
+    if (user) user.total_poin += Number(poin);
+  }
 
-  db.run('UPDATE users SET total_poin = total_poin + ? WHERE id = ?', [poin, user_id], (err) => {
-    if (err) return res.status(500).json({ success: false, message: 'Gagal update poin user.' });
-    res.json({ success: true, message: 'Poin & riwayat kuis berhasil disimpan.' });
-  });
+  res.json({ success: true, message: 'Poin & riwayat kuis berhasil disimpan.' });
 });
 
 // 5. Endpoint Ambil Riwayat Kuis User
 app.get('/api/quiz-history/:user_id', (req, res) => {
   const userId = req.params.user_id;
-  if (!db) return res.json([]);
-  db.all('SELECT * FROM quiz_history WHERE user_id = ? ORDER BY id DESC', [userId], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, message: err.message });
-    res.json(rows);
-  });
+  const userHistory = quizHistoryMemory.filter(h => h.user_id == userId);
+  res.json(userHistory);
 });
 
 // 6. Endpoint Update Profil
 app.post('/api/update-profile', (req, res) => {
   const { user_id, nama, kelas } = req.body;
-  if (!db) return res.json({ success: true });
-  db.run('UPDATE users SET nama = ?, kelas = ? WHERE id = ?', [nama, kelas, user_id], (err) => {
-    if (err) return res.status(500).json({ success: false });
-    res.json({ success: true });
-  });
+  const user = usersMemory.find(u => u.id == user_id);
+  if (user) {
+    user.nama = nama || user.nama;
+    user.kelas = kelas || user.kelas;
+  }
+  res.json({ success: true });
 });
 
 // Jalankan server secara lokal
