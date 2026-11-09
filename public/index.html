@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sortify AI - Masuk & Mulai Scan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <style>
+    .bg-glass {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-teal-100 to-green-100 flex items-center justify-center min-h-screen p-4">
+
+  <div class="bg-glass p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-white/50 animate__animated animate__fadeInDown">
+    <div class="text-center mb-8">
+      <div class="inline-block p-4 bg-emerald-500/10 rounded-full mb-3 shadow-inner animate__animated animate__bounceIn">
+        <span class="text-5xl">🌱</span>
+      </div>
+      <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Sortify AI</h1>
+      <p class="text-sm text-slate-500 mt-1">Platform Edukasi & Pemilahan Sampah Pintar</p>
+    </div>
+
+    <!-- Form Login -->
+    <form id="formLogin" class="space-y-5">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">Nama Lengkap</label>
+        <div class="relative">
+          <input type="text" id="nama" required 
+            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition duration-200 bg-white/80"
+            placeholder="Masukkan nama kamu">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-2">Kelas</label>
+        <select id="kelas" required 
+          class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition duration-200 bg-white/80">
+          <option value="" disabled selected>Pilih Kelas Kamu</option>
+          <option value="Kelas X">Kelas X</option>
+          <option value="Kelas XI">Kelas XI</option>
+          <option value="Kelas XII">Kelas XII</option>
+        </select>
+      </div>
+
+      <button type="submit" id="btnSubmit"
+        class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3.5 rounded-xl transition duration-300 shadow-lg hover:shadow-emerald-500/30 flex items-center justify-center space-x-2">
+        <span>Masuk & Mulai Scan</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('formLogin').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btnSubmit = document.getElementById('btnSubmit');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<span>Memproses...</span>';
+
+      const nama = document.getElementById('nama').value.trim();
+      const kelas = document.getElementById('kelas').value;
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nama, kelas })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Simpan data login
+          localStorage.setItem('user_id', result.data.id);
+          localStorage.setItem('nama_user', result.data.nama);
+          localStorage.setItem('kelas_user', result.data.kelas);
+          localStorage.setItem('user', JSON.stringify(result.data));
+
+          // Langsung alihkan ke menu Smart Scan (upload.html)
+          window.location.href = 'upload.html'; 
+        } else {
+          alert(result.message || 'Gagal masuk');
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Masuk & Mulai Scan</span>';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan jaringan.');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Masuk & Mulai Scan</span>';
+      }
+    });
+  </script>
+
+</body>
+</html>

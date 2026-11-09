@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sortify AI - Ensiklopedia Panduan</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #0d9488;
+      --primary-hover: #0f766e;
+      --bg-light: #e6f4f1;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8fafc;
+    }
+    /* Navbar Custom */
+    .navbar-custom {
+      background-color: var(--primary-color);
+      padding: 12px 0;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: #ffffff !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-pro {
+      background-color: #ffffff;
+      color: var(--primary-color);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+    .nav-link-custom {
+      color: #ffffff !important;
+      opacity: 0.9;
+      font-weight: 500;
+      padding: 6px 16px !important;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+    .nav-link-custom:hover, .nav-link-custom.active {
+      opacity: 1;
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .btn-user-profile {
+      background: #ffffff;
+      color: var(--primary-color);
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 6px 16px;
+      border: none;
+    }
+    .btn-logout {
+      border: 1.5px solid #ffffff;
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 6px 16px;
+      background: transparent;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background-color: var(--bg-light);
+      padding: 50px 20px;
+      text-align: center;
+    }
+    .hero-title {
+      color: #0f766e;
+      font-weight: 800;
+      font-size: 2.3rem;
+      margin-bottom: 10px;
+    }
+    .hero-subtitle {
+      color: #475569;
+      font-size: 1rem;
+      margin-bottom: 30px;
+    }
+
+    /* Search Input Wrapper */
+    .search-wrapper {
+      max-width: 680px;
+      margin: 0 auto 30px auto;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 14px 20px 14px 48px;
+      border-radius: 30px;
+      border: 2px solid #a7f3d0;
+      font-size: 0.95rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--primary-color);
+    }
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #0d9488;
+      font-size: 1.1rem;
+    }
+
+    /* Category Filter Buttons */
+    .category-group {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn-filter {
+      border: 2px solid #0d9488;
+      background: #ffffff;
+      color: #0d9488;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 8px 18px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-filter.active, .btn-filter:hover {
+      background: #0d9488;
+      color: #ffffff;
+    }
+
+    /* Card Item Grid */
+    .trash-card {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+      height: 100%;
+    }
+    .trash-card:hover {
+      transform: translateY(-4px);
+    }
+    .badge-category {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+    .cat-organik { background: #dcfce7; color: #15803d; }
+    .cat-anorganik { background: #dbeafe; color: #1e40af; }
+    .cat-b3 { background: #fee2e2; color: #b91c1c; }
+    .cat-residu { background: #f3f4f6; color: #374151; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container">
+      <a class="navbar-brand" href="dashboard.html">
+        <i class="fa-solid fa-recycle"></i> Sortify <span class="badge-pro">AI Pro</span>
+      </a>
+      <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+        <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="navContent">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1">
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="upload.html"><i class="fa-solid fa-microchip me-1"></i> Smart Scan</a></li>
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="dashboard.html"><i class="fa-solid fa-trophy me-1"></i> Leaderboard</a></li>
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="kuis.html"><i class="fa-solid fa-gamepad me-1"></i> Kuis Edukasi</a></li>
+          <li class="nav-item"><a class="nav-link nav-link-custom active" href="panduan.html"><i class="fa-solid fa-book-open me-1"></i> Panduan</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-user-profile" onclick="window.location.href='profile.html'"><i class="fa-regular fa-user me-1"></i> <span id="userNameNav">Riha</span></button>
+          <button class="btn btn-logout" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO & SEARCH SECTION -->
+  <section class="hero-section">
+    <div class="container">
+      <h1 class="hero-title">Ensiklopedia Panduan Sampah Menyeluruh</h1>
+      <p class="hero-subtitle">Panduan general dan komprehensif untuk mengidentifikasi serta mengolah berbagai jenis limbah.</p>
+      
+      <!-- Input Pencarian -->
+      <div class="search-wrapper">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Cari benda apa saja (misal: botol, sisa makanan, popok, oli)...">
+      </div>
+
+      <!-- Filter Kategori -->
+      <div class="category-group">
+        <button class="btn-filter active" data-category="all">Semua Kategori</button>
+        <button class="btn-filter" data-category="organik"><i class="fa-solid fa-leaf me-1"></i> Organik</button>
+        <button class="btn-filter" data-category="anorganik"><i class="fa-solid fa-arrows-spin me-1"></i> Anorganik / Daur Ulang</button>
+        <button class="btn-filter" data-category="b3"><i class="fa-solid fa-triangle-exclamation me-1"></i> B3 & Medis</button>
+        <button class="btn-filter" data-category="residu"><i class="fa-solid fa-trash-can me-1"></i> Residu / Khusus</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DAFTAR PANDUAN SAMPAH -->
+  <section class="py-5">
+    <div class="container">
+      <div class="row g-4" id="trashGrid">
+        <!-- Kartu Sampah (Dua Generate Otomatis dari JS) -->
+      </div>
+      <div id="noResult" class="text-center py-5 d-none">
+        <i class="fa-solid fa-folder-open text-muted fa-3x mb-3"></i>
+        <h5 class="text-muted">Item tidak ditemukan</h5>
+        <p class="text-secondary small">Coba masukkan kata kunci pencarian atau kategori lain.</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Data Katalog Sampah Ensiklopedia
+    const trashData = [
+      { id: 1, name: "Botol Plastik (PET)", category: "anorganik", catLabel: "Anorganik", icon: "fa-bottle-water", desc: "Bisa didaur ulang menjadi bijih plastik. Pastikan dikosongkan dan digepengkan sebelum dibuang." },
+      { id: 2, name: "Sisa Makanan / Sayuran", category: "organik", catLabel: "Organik", icon: "fa-apple-whole", desc: "Sampah basah organik yang sangat baik dijadikan kompos tanaman atau pakan larva maggot." },
+      { id: 3, name: "Baterai Bekas", category: "b3", catLabel: "B3 & Medis", icon: "fa-battery-full", desc: "Mengandung bahan kimia berbahaya. Pisahkan dan buang ke drop box limbah B3 lokal." },
+      { id: 4, name: "Popok Sekali Pakai", category: "residu", catLabel: "Residu", icon: "fa-box-tissue", desc: "Sampah sukar terurai yang harus dibuang ke TPA (Tempat Pemrosesan Akhir)." },
+      { id: 5, name: "Kardus & Kertas", category: "anorganik", catLabel: "Anorganik", icon: "fa-box", desc: "Dapat didaur ulang menjadi kertas baru. Jaga agar tidak basah dan terkontaminasi minyak." },
+      { id: 6, name: "Oli Bekas / Jarum Suntik", category: "b3", catLabel: "B3 & Medis", icon: "fa-syringe", desc: "Limbah beracun dan infeksius. Memerlukan penanganan khusus oleh instalasi pengolahan limbah." },
+      { id: 7, name: "Daun & Ranting Kering", category: "organik", catLabel: "Organik", icon: "fa-leaf", desc: "Dapat dijadikan pupuk kompos cokelat (kaya karbon) untuk menyeimbangkan tanah." },
+      { id: 8, name: "Puntung Rokok & Struk Belanja", category: "residu", catLabel: "Residu", icon: "fa-receipt", desc: "Mengandung mikroplastik dan kertas thermal berkimia yang tak bisa didaur ulang biasa." }
+    ];
+
+    let activeCategory = 'all';
+
+    // Function Render Cards
+    function renderCards() {
+      const grid = document.getElementById('trashGrid');
+      const noResult = document.getElementById('noResult');
+      const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      grid.innerHTML = '';
+      
+      const filtered = trashData.filter(item => {
+        const matchesCategory = (activeCategory === 'all') || (item.category === activeCategory);
+        const matchesSearch = item.name.toLowerCase().includes(searchText) || item.desc.toLowerCase().includes(searchText);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        noResult.classList.remove('d-none');
+      } else {
+        noResult.classList.add('d-none');
+        filtered.forEach(item => {
+          let badgeClass = 'cat-anorganik';
+          if (item.category === 'organik') badgeClass = 'cat-organik';
+          if (item.category === 'b3') badgeClass = 'cat-b3';
+          if (item.category === 'residu') badgeClass = 'cat-residu';
+
+          const cardHTML = `
+            <div class="col-md-6 col-lg-3">
+              <div class="card trash-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div class="rounded-circle p-3 bg-light text-success">
+                    <i class="fa-solid ${item.icon} fa-xl"></i>
+                  </div>
+                  <span class="badge-category ${badgeClass}">${item.catLabel}</span>
+                </div>
+                <h5 class="fw-bold mb-2">${item.name}</h5>
+                <p class="text-muted small mb-0">${item.desc}</p>
+              </div>
+            </div>
+          `;
+          grid.innerHTML += cardHTML;
+        });
+      }
+    }
+
+    // Listener Input Search
+    document.getElementById('searchInput').addEventListener('input', renderCards);
+
+    // Listener Button Filter Kategori
+    document.querySelectorAll('.btn-filter').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        activeCategory = e.currentTarget.getAttribute('data-category');
+        renderCards();
+      });
+    });
+
+    // Inisialisasi Pertama
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('sortify_user');
+      if (savedUser) {
+        document.getElementById('userNameNav').textContent = JSON.parse(savedUser).name || 'Pengguna';
+      }
+      renderCards();
+    });
+
+    function logout() {
+      localStorage.removeItem('sortify_user');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

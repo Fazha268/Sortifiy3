@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Edukasi - Sortify AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        :root { --primary-green: #059669; --light-green: #ecfdf5; --accent-green: #10b981; }
+        body { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .navbar { backdrop-filter: blur(10px); background-color: rgba(5, 150, 105, 0.95) !important; }
+        .card { border: none; border-radius: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+        .nav-pills .nav-link.active { background-color: var(--primary-green); font-weight: 600; }
+        .nav-pills .nav-link { color: var(--primary-green); font-weight: 500; }
+        .quiz-icon-container { width: 90px; height: 90px; background: var(--light-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); }
+        .quiz-icon { font-size: 2.5rem; animation: bounceIn 1s infinite alternate; }
+        @keyframes bounceIn { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-8px) scale(1.1); } }
+        .option-btn { border: 2px solid #e5e7eb; background-color: #ffffff; transition: all 0.2s ease; border-radius: 1rem; text-align: left; font-weight: 500; }
+        .option-btn:hover:not(:disabled) { border-color: var(--accent-green); background-color: var(--light-green); transform: translateY(-2px); }
+        .option-btn.correct { background-color: #d1fae5 !important; border-color: #059669 !important; color: #065f46 !important; font-weight: bold; }
+        .option-btn.incorrect { background-color: #fee2e2 !important; border-color: #dc2626 !important; color: #991b1b !important; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm py-3 mb-4 sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2" href="upload.html">
+                <i class="bi bi-recycle text-light fs-3"></i> Sortify <span class="badge bg-light text-success fs-6">AI Pro</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-lg-4">
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="upload.html"><i class="bi bi-cpu me-1"></i> Smart Scan</a></li>
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="dashboard.html"><i class="bi bi-trophy me-1"></i> Leaderboard</a></li>
+                    <li class="nav-item"><a class="nav-link active rounded-pill px-3 py-2" href="kuis.html"><i class="bi bi-controller me-1"></i> Kuis Edukasi</a></li>
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="panduan.html"><i class="bi bi-journal-text me-1"></i> Panduan</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                    <a href="profile.html" class="btn btn-light btn-sm rounded-pill px-3 py-2 fw-bold text-success shadow-sm d-flex align-items-center gap-1">
+                        <i class="bi bi-person-circle fs-6"></i> <span id="welcomeUserText">Profil</span>
+                    </a>
+                    <button class="btn btn-outline-light btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="logout()">
+                        <i class="bi bi-box-arrow-right me-1"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5" style="max-width: 750px;">
+        <div class="card shadow-lg animate__animated animate__fadeInUp">
+            <div class="card-body p-4 p-md-5">
+                <div id="startScreen" class="text-center py-4">
+                    <div class="quiz-icon-container"><span class="quiz-icon">🌍</span></div>
+                    <h2 class="fw-bold text-success mb-3">Tantangan Kuis Lingkungan</h2>
+                    <p class="text-muted mb-4">Uji pengetahuanmu! Soal diacak otomatis dan poin langsung dikirim ke Leaderboard.</p>
+                    <button class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow" onclick="startQuiz()">
+                        <i class="bi bi-play-fill me-2 fs-5"></i> Mulai Kuis Sekarang
+                    </button>
+                </div>
+
+                <div id="quizScreen" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-2 rounded-pill" id="questionProgress">Pertanyaan 1 dari 5</span>
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-2 rounded-pill"><i class="bi bi-star-fill me-1"></i> Skor: <span id="currentScore">0</span></span>
+                    </div>
+
+                    <div class="quiz-icon-container"><span class="quiz-icon" id="questionEmoji">🍎</span></div>
+                    <h4 class="fw-bold text-dark mb-4 text-center" id="questionText">Pertanyaan...</h4>
+                    <div class="d-grid gap-3 mb-4" id="optionsContainer"></div>
+
+                    <div class="text-end">
+                        <button id="nextBtn" class="btn btn-success rounded-pill px-4 py-2 fw-semibold d-none" onclick="nextQuestion()">
+                            Selanjutnya <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultScreen" class="d-none text-center py-4 animate__animated animate__zoomIn">
+                    <div class="quiz-icon-container"><span class="quiz-icon">🏆</span></div>
+                    <h2 class="fw-bold text-success mb-2">Kuis Selesai!</h2>
+                    <p class="text-muted mb-4">Poin hasil kuis berhasil dikirim ke papan peringkat.</p>
+                    
+                    <div class="p-4 bg-light rounded-4 border border-success border-opacity-10 mb-4 d-inline-block px-5">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-1">Skor Akhir</h6>
+                        <h1 class="fw-bold text-success display-4 mb-0" id="finalScoreText">0 / 5</h1>
+                        <span class="badge bg-success mt-2 px-3 py-1 rounded-pill" id="rewardBadge">+0 Poin Dikirim</span>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3">
+                        <button class="btn btn-success rounded-pill px-4 py-2 fw-semibold shadow-sm" onclick="startQuiz()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Coba Lagi (Soal Acak)
+                        </button>
+                        <a href="dashboard.html" class="btn btn-outline-success rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-trophy me-1"></i> Lihat Leaderboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let userId = localStorage.getItem('user_id');
+        let namaUser = localStorage.getItem('nama_user');
+        if (!userId) window.location.href = 'index.html';
+        else document.getElementById('welcomeUserText').innerText = namaUser || 'Profil';
+
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+
+        const masterQuizData = [
+            { emoji: "🍎", question: "Termasuk ke dalam kelompok manakah sisa makanan dan daun kering?", options: ["Sampah Organik", "Sampah Anorganik", "Sampah B3", "Sampah Residu"], answer: 0 },
+            { emoji: "🔋", question: "Mana di bawah ini contoh dari Sampah B3 (Bahan Berbahaya dan Beracun)?", options: ["Botol kaca", "Kertas HVS", "Baterai bekas", "Kulit pisang"], answer: 2 },
+            { emoji: "🍼", question: "Apa tindakan pertama yang paling tepat sebelum membuang botol plastik?", options: ["Langsung dibakar", "Kosongkan dan bilas sisa cairan", "Dicat warna-warni", "Dibiarkan basah"], answer: 1 },
+            { emoji: "📦", question: "Kertas koran dan kardus bekas termasuk ke dalam jenis sampah...", options: ["Sampah Organik", "Sampah Anorganik", "Sampah B3", "Sampah Residu"], answer: 1 },
+            { emoji: "🛢️", question: "Minyak goreng bekas (jelantah) sebaiknya dikelola dengan cara...", options: ["Dibuang ke wastafel", "Disimpan di botol & disetor ke pengepul jelantah", "Disiram ke tanaman", "Dibakar di halaman"], answer: 1 },
+            { emoji: "💡", question: "Lampu neon atau bohlam bekas harus dikategorikan sebagai...", options: ["Sampah Organik", "Sampah Anorganik biasa", "Sampah B3", "Sampah Kertas"], answer: 2 },
+            { emoji: "♻️", question: "Apa manfaat utama dari melakukan pemilahan sampah sejak dari rumah?", options: ["Mempermudah proses daur ulang dan mengurangi volume di TPA", "Membuat tempat sampah lebih berat", "Menghabiskan waktu luang", "Tidak ada manfaatnya"], answer: 0 }
+        ];
+
+        let activeQuizQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+
+        function shuffleArray(arr) {
+            let a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function startQuiz() {
+            activeQuizQuestions = shuffleArray(masterQuizData).slice(0, 5);
+            currentQuestionIndex = 0; score = 0;
+            document.getElementById('startScreen').classList.add('d-none');
+            document.getElementById('resultScreen').classList.add('d-none');
+            document.getElementById('quizScreen').classList.remove('d-none');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answered = false;
+            document.getElementById('nextBtn').classList.add('d-none');
+            const q = activeQuizQuestions[currentQuestionIndex];
+            document.getElementById('questionProgress').innerText = `Pertanyaan ${currentQuestionIndex + 1} dari ${activeQuizQuestions.length}`;
+            document.getElementById('currentScore').innerText = score;
+            document.getElementById('questionText').innerText = q.question;
+            document.getElementById('questionEmoji').innerText = q.emoji;
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn option-btn p-3 w-100 shadow-sm';
+                btn.innerHTML = `<span class="fw-bold me-2">${String.fromCharCode(65 + idx)}.</span> ${opt}`;
+                btn.onclick = () => selectOption(idx, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectOption(idx, btn) {
+            if (answered) return;
+            answered = true;
+            const q = activeQuizQuestions[currentQuestionIndex];
+            const allBtns = document.querySelectorAll('.option-btn');
+
+            if (idx === q.answer) { btn.classList.add('correct'); score++; }
+            else { btn.classList.add('incorrect'); allBtns[q.answer].classList.add('correct'); }
+            allBtns.forEach(b => b.disabled = true);
+            document.getElementById('currentScore').innerText = score;
+            document.getElementById('nextBtn').classList.remove('d-none');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < activeQuizQuestions.length) loadQuestion();
+            else finishQuiz();
+        }
+
+        async function finishQuiz() {
+            document.getElementById('quizScreen').classList.add('d-none');
+            document.getElementById('resultScreen').classList.remove('d-none');
+            document.getElementById('finalScoreText').innerText = `${score} / ${activeQuizQuestions.length}`;
+            const earned = score * 10;
+            document.getElementById('rewardBadge').innerText = `+${earned} Poin Dikirim ke Leaderboard`;
+
+            try {
+                await fetch('/api/add-quiz-points', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, 
+                        score: score, 
+                        total_soal: activeQuizQuestions.length, 
+                        poin: earned 
+                    })
+                });
+            } catch (err) { console.error(err); }
+        }
+    </script>
+</body>
+</html>

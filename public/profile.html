@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Pengguna - Sortify AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        :root { --primary-green: #059669; --light-green: #ecfdf5; --accent-green: #10b981; }
+        body { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .navbar { backdrop-filter: blur(10px); background-color: rgba(5, 150, 105, 0.95) !important; }
+        .card { border: none; border-radius: 1.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .nav-pills .nav-link.active { background-color: var(--primary-green); font-weight: 600; }
+        .nav-pills .nav-link { color: var(--primary-green); font-weight: 500; }
+        .profile-avatar { width: 100px; height: 100px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto 1rem auto; box-shadow: 0 10px 20px rgba(5, 150, 105, 0.3); }
+        .badge-card { background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 1rem; transition: all 0.3s; }
+        .badge-card.unlocked { background: var(--light-green); border-color: var(--accent-green); border-style: solid; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm py-3 mb-4 sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2" href="upload.html">
+                <i class="bi bi-recycle text-light fs-3"></i> Sortify <span class="badge bg-light text-success fs-6">AI Pro</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-lg-4">
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="upload.html"><i class="bi bi-cpu me-1"></i> Smart Scan</a></li>
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="dashboard.html"><i class="bi bi-trophy me-1"></i> Leaderboard</a></li>
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="kuis.html"><i class="bi bi-controller me-1"></i> Kuis Edukasi</a></li>
+                    <li class="nav-item"><a class="nav-link rounded-pill px-3 py-2" href="panduan.html"><i class="bi bi-journal-text me-1"></i> Panduan</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                    <a href="profile.html" class="btn btn-light btn-sm rounded-pill px-3 py-2 fw-bold text-success shadow-sm d-flex align-items-center gap-1">
+                        <i class="bi bi-person-circle fs-6"></i> <span id="welcomeUserText">Profil</span>
+                    </a>
+                    <button class="btn btn-outline-light btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="logout()">
+                        <i class="bi bi-box-arrow-right me-1"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5" style="max-width: 800px;">
+        <div class="card shadow-lg p-4 p-md-5 mb-4">
+            <div class="text-center">
+                <div class="profile-avatar"><i class="bi bi-person-fill"></i></div>
+                <h3 class="fw-bold text-dark mb-1" id="profileName">Nama</h3>
+                <p class="text-muted mb-3" id="profileClass">Kelas -</p>
+                <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-2 rounded-pill fs-6" id="profilePoints">
+                    <i class="bi bi-star-fill text-warning me-1"></i> 0 Poin
+                </span>
+            </div>
+            <hr class="my-4">
+            <h5 class="fw-bold text-success mb-3"><i class="bi bi-pencil-square me-2"></i>Pengaturan Akun</h5>
+            <form onsubmit="updateProfile(event)">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted">Nama Lengkap</label>
+                        <input type="text" id="inputNama" class="form-control rounded-pill px-3 py-2" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-muted">Kelas</label>
+                        <input type="text" id="inputKelas" class="form-control rounded-pill px-3 py-2" required>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-semibold shadow-sm">Simpan Perubahan</button>
+                </div>
+            </form>
+            <div id="updateAlert" class="mt-3"></div>
+        </div>
+
+        <div class="card shadow-lg p-4 p-md-5 mb-4">
+            <h5 class="fw-bold text-success mb-3"><i class="bi bi-award-fill me-2"></i>Lencana Pencapaian</h5>
+            <div class="row g-3" id="badgesContainer"></div>
+        </div>
+
+        <div class="card shadow-lg p-4 p-md-5">
+            <h5 class="fw-bold text-success mb-3"><i class="bi bi-clock-history me-2"></i>Riwayat Kuis Edukasi</h5>
+            <div class="table-responsive">
+                <table class="table align-middle table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-3 rounded-start">Tanggal</th>
+                            <th class="py-3">Skor Benar</th>
+                            <th class="py-3 text-end rounded-end">Poin Diperoleh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quizHistoryTableBody">
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Memuat riwayat...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let userId = localStorage.getItem('user_id');
+        let namaUser = localStorage.getItem('nama_user');
+        if (!userId) window.location.href = 'index.html';
+        else {
+            document.getElementById('welcomeUserText').innerText = namaUser || 'Profil';
+            loadUserData();
+            loadQuizHistory();
+        }
+
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+
+        async function loadUserData() {
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                const u = data.find(x => x.id == userId);
+                if (u) {
+                    document.getElementById('profileName').innerText = u.nama;
+                    document.getElementById('profileClass').innerText = `Kelas: ${u.kelas}`;
+                    document.getElementById('profilePoints').innerHTML = `<i class="bi bi-star-fill text-warning me-1"></i> ${u.total_poin} Poin`;
+                    document.getElementById('inputNama').value = u.nama;
+                    document.getElementById('inputKelas').value = u.kelas;
+                    renderBadges(u.total_poin);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadQuizHistory() {
+            try {
+                const res = await fetch(`/api/quiz-history/${userId}`);
+                const history = await res.json();
+                const tbody = document.getElementById('quizHistoryTableBody');
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(history) || history.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-muted">Belum ada riwayat kuis. Yuk main kuis sekarang!</td></tr>`;
+                    return;
+                }
+
+                history.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="py-3 text-muted small"><i class="bi bi-calendar-event me-1"></i> ${item.tanggal}</td>
+                            <td class="py-3 fw-semibold text-dark">${item.score} dari ${item.total_soal} Soal</td>
+                            <td class="py-3 text-end fw-bold text-success">+${item.poin} Poin</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) { console.error("Gagal memuat riwayat kuis:", err); }
+        }
+
+        async function updateProfile(e) {
+            e.preventDefault();
+            const nama = document.getElementById('inputNama').value.trim();
+            const kelas = document.getElementById('inputKelas').value.trim();
+            const alertDiv = document.getElementById('updateAlert');
+
+            try {
+                const res = await fetch('/api/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, nama, kelas })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('nama_user', nama);
+                    document.getElementById('welcomeUserText').innerText = nama;
+                    alertDiv.innerHTML = `<div class="alert alert-success rounded-pill py-2 text-center small">Berhasil diperbarui!</div>`;
+                    loadUserData();
+                }
+            } catch (err) { alertDiv.innerHTML = `<div class="alert alert-danger rounded-pill py-2 text-center small">Gagal server.</div>`; }
+        }
+
+        function renderBadges(poin) {
+            const list = [
+                { title: "🌱 Eco Starter", desc: "Mulai bergabung", min: 0, icon: "bi-seedling" },
+                { title: "♻️ Pemilah Aktif", desc: "Minimal 30 Poin", min: 30, icon: "bi-recycle" },
+                { title: "🏆 Pejuang Daur Ulang", desc: "Minimal 70 Poin", min: 70, icon: "bi-award" },
+                { title: "🌟 Pahlawan Lingkungan", desc: "Minimal 150 Poin", min: 150, icon: "bi-shield-check" }
+            ];
+            const c = document.getElementById('badgesContainer');
+            c.innerHTML = '';
+            list.forEach(b => {
+                const ok = poin >= b.min;
+                c.innerHTML += `
+                    <div class="col-md-6">
+                        <div class="${ok ? 'badge-card unlocked shadow-sm' : 'badge-card opacity-50'} p-3 d-flex align-items-center gap-3">
+                            <div class="fs-2 ${ok ? 'text-success' : 'text-muted'} bg-white p-3 rounded-circle shadow-sm"><i class="bi ${b.icon}"></i></div>
+                            <div>
+                                <h6 class="fw-bold mb-1">${b.title} ${ok ? '<span class="badge bg-success small">Terbuka</span>' : '<span class="badge bg-secondary small">Terkunci</span>'}</h6>
+                                <p class="text-muted small mb-0">${b.desc} (${b.min} Poin)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
