@@ -179,7 +179,7 @@
           <li class="nav-item"><a class="nav-link nav-link-custom active" href="panduan.html"><i class="fa-solid fa-book-open me-1"></i> Panduan</a></li>
         </ul>
         <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-user-profile" onclick="window.location.href='profile.html'"><i class="fa-regular fa-user me-1"></i> <span id="userNameNav">Riha</span></button>
+          <button class="btn btn-user-profile" onclick="window.location.href='profile.html'"><i class="fa-regular fa-user me-1"></i> <span id="userNameNav">Profil</span></button>
           <button class="btn btn-logout" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar</button>
         </div>
       </div>
@@ -213,7 +213,7 @@
   <section class="py-5">
     <div class="container">
       <div class="row g-4" id="trashGrid">
-        <!-- Kartu Sampah (Dua Generate Otomatis dari JS) -->
+        <!-- Kartu Sampah (Generate Otomatis dari JS) -->
       </div>
       <div id="noResult" class="text-center py-5 d-none">
         <i class="fa-solid fa-folder-open text-muted fa-3x mb-3"></i>
@@ -296,15 +296,15 @@
 
     // Inisialisasi Pertama
     document.addEventListener('DOMContentLoaded', () => {
-      const savedUser = localStorage.getItem('sortify_user');
-      if (savedUser) {
-        document.getElementById('userNameNav').textContent = JSON.parse(savedUser).name || 'Pengguna';
+      const namaUser = localStorage.getItem('nama_user');
+      if (namaUser) {
+        document.getElementById('userNameNav').textContent = namaUser;
       }
       renderCards();
     });
 
     function logout() {
-      localStorage.removeItem('sortify_user');
+      localStorage.clear();
       window.location.href = 'index.html';
     }
   </script>
