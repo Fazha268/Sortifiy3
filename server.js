@@ -9,43 +9,50 @@ const { GoogleGenAI } = require('@google/genai');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Inisialisasi Google Gen AI menggunakan Environment Variable (.env)
+// Inisialisasi Google Gen AI menggunakan Environment Variable
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Konfigurasi Database SQLite
-const dbFile = path.join(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbFile, (err) => {
-  if (err) console.error('Gagal terhubung ke SQLite:', err.message);
-  else console.log('Berhasil terhubung ke database SQLite.');
-});
+// Konfigurasi Database SQLite yang Aman untuk Vercel Serverless (Direktori /tmp)
+const isVercel = process.env.VERCEL === '1';
+let db;
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nama TEXT NOT NULL,
-    kelas TEXT NOT NULL,
-    total_poin INTEGER DEFAULT 0
-  )`);
+try {
+  const dbFile = isVercel ? path.join('/tmp', 'database.sqlite') : path.join(__dirname, 'database.sqlite');
+  db = new sqlite3.Database(dbFile, (err) => {
+    if (err) console.error('Gagal terhubung ke SQLite:', err.message);
+    else console.log('Berhasil terhubung ke database SQLite di:', dbFile);
+  });
 
-  db.run(`CREATE TABLE IF NOT EXISTS quiz_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    score INTEGER,
-    total_soal INTEGER,
-    poin INTEGER,
-    tanggal TEXT,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  )`);
-});
+  db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nama TEXT NOT NULL,
+      kelas TEXT NOT NULL,
+      total_poin INTEGER DEFAULT 0
+    )`);
 
-// Konfigurasi Multer Upload
+    db.run(`CREATE TABLE IF NOT EXISTS quiz_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      score INTEGER,
+      total_soal INTEGER,
+      poin INTEGER,
+      tanggal TEXT,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+  });
+} catch (e) {
+  console.error("Kesalahan inisialisasi database:", e.message);
+}
+
+// Konfigurasi Multer Upload (Aman untuk Vercel /tmp)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
+    const uploadDir = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'public', 'uploads');
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
@@ -61,6 +68,7 @@ const upload = multer({ storage: storage });
 app.post('/api/login', (req, res) => {
   const { nama, kelas } = req.body;
   if (!nama || !kelas) return res.status(400).json({ success: false, message: 'Nama dan kelas wajib diisi.' });
+  if (!db) return res.status(500).json({ success: false, message: 'Database belum siap.' });
 
   db.get('SELECT * FROM users WHERE nama = ? AND kelas = ?', [nama, kelas], (err, row) => {
     if (err) return res.status(500).json({ success: false, message: err.message });
@@ -77,6 +85,7 @@ app.post('/api/login', (req, res) => {
 
 // 2. Endpoint Leaderboard
 app.get('/api/leaderboard', (req, res) => {
+  if (!db) return res.status(500).json({ success: false, message: 'Database belum siap.' });
   db.all('SELECT id, nama, kelas, total_poin FROM users ORDER BY total_poin DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ success: false, message: err.message });
     res.json(rows);
@@ -131,10 +140,14 @@ app.post('/api/scan', upload.single('image'), async (req, res) => {
     const finalKategori = aiResult.kategori || "Sampah Anorganik - Umum";
     const finalDeskripsi = aiResult.deskripsi || "1. Bersihkan objek.\n2. Kelola sesuai jenisnya.";
 
-    db.run('UPDATE users SET total_poin = total_poin + ? WHERE id = ?', [finalPoin, userId], (err) => {
-      if (err) return res.status(500).json({ success: false, message: 'Gagal update database.' });
+    if (db) {
+      db.run('UPDATE users SET total_poin = total_poin + ? WHERE id = ?', [finalPoin, userId], (err) => {
+        if (err) return res.status(500).json({ success: false, message: 'Gagal update database.' });
+        res.json({ success: true, kategori: finalKategori, poin: finalPoin, deskripsi: finalDeskripsi });
+      });
+    } else {
       res.json({ success: true, kategori: finalKategori, poin: finalPoin, deskripsi: finalDeskripsi });
-    });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Kesalahan server AI.' });
   }
@@ -144,6 +157,7 @@ app.post('/api/scan', upload.single('image'), async (req, res) => {
 app.post('/api/add-quiz-points', (req, res) => {
   const { user_id, score, total_soal, poin } = req.body;
   if (!user_id || poin === undefined) return res.status(400).json({ success: false, message: 'Data tidak valid.' });
+  if (!db) return res.status(500).json({ success: false, message: 'Database belum siap.' });
 
   const tanggal = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -161,6 +175,7 @@ app.post('/api/add-quiz-points', (req, res) => {
 // 5. Endpoint Ambil Riwayat Kuis User
 app.get('/api/quiz-history/:user_id', (req, res) => {
   const userId = req.params.user_id;
+  if (!db) return res.status(500).json({ success: false, message: 'Database belum siap.' });
   db.all('SELECT * FROM quiz_history WHERE user_id = ? ORDER BY id DESC', [userId], (err, rows) => {
     if (err) return res.status(500).json({ success: false, message: err.message });
     res.json(rows);
@@ -170,6 +185,7 @@ app.get('/api/quiz-history/:user_id', (req, res) => {
 // 6. Endpoint Update Profil
 app.post('/api/update-profile', (req, res) => {
   const { user_id, nama, kelas } = req.body;
+  if (!db) return res.status(500).json({ success: false, message: 'Database belum siap.' });
   db.run('UPDATE users SET nama = ?, kelas = ? WHERE id = ?', [nama, kelas, user_id], (err) => {
     if (err) return res.status(500).json({ success: false });
     res.json({ success: true });
