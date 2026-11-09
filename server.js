@@ -176,4 +176,10 @@ app.post('/api/update-profile', (req, res) => {
   });
 });
 
-app.listen(PORT, () => console.log(`Server Sortify AI berjalan di http://localhost:3000`));
+// Jalankan server secara lokal (jika tidak sedang di Vercel)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`Server Sortify AI berjalan di http://localhost:${PORT}`));
+}
+
+// Wajib diekspor agar bisa dibaca oleh Vercel Serverless Function
+module.exports = app;
