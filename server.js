@@ -8,7 +8,7 @@ const { GoogleGenAI } = require('@google/genai');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Inisialisasi Google Gen AI menggunakan Environment Variable GEMINI_API_KEY
+// Inisialisasi Google Gen AI
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use(express.json());
@@ -21,7 +21,7 @@ let usersMemory = [
 ];
 let quizHistoryMemory = [];
 
-// Konfigurasi Multer Upload (Aman untuk Vercel /tmp + batas ukuran 5 MB)
+// Konfigurasi Multer Upload (Aman untuk Vercel /tmp)
 const isVercel = process.env.VERCEL === '1';
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -30,124 +30,10 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-    cb(null, Date.now() + '-' + safeName);
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // Maksimal 5 MB
-});
-
-const systemInstruction = `
-  Kamu adalah AI Computer Vision khusus
-  untuk mengidentifikasi dan mengklasifikasikan sampah.
-
-  Analisis objek berdasarkan gambar yang benar-benar
-  diberikan pengguna.
-
-  Jangan menebak objek yang tidak terlihat jelas.
-  Jangan selalu menganggap objek sebagai plastik.
-  Identifikasi material dan bentuk objek terlebih dahulu.
-`;
-
-const promptText = `
-  Identifikasi objek sampah pada gambar.
-
-  Pilih SATU kategori utama dari tiga kategori berikut:
-
-  1. Sampah Organik
-     Contoh: sisa makanan, daun, kulit buah.
-
-  2. Sampah Anorganik
-     Contoh: botol plastik, kertas, kardus,
-     kaleng, kaca, dan kemasan.
-
-  3. Sampah B3
-     Contoh: baterai bekas, lampu neon,
-     limbah bahan kimia, dan benda berbahaya.
-
-  ATURAN PENTING:
-  - Kenali objek sesuai gambar, bukan berdasarkan contoh.
-  - Jangan otomatis memilih plastik.
-  - Bedakan kertas, tisu, plastik, logam, dan kaca.
-  - Jika objek tidak dapat dikenali, nyatakan
-    bahwa objek tidak dapat diidentifikasi.
-  - Jangan mengarang material yang tidak terlihat.
-  - Tisu kertas yang kotor tidak boleh dianggap
-    sebagai bahan yang dapat didaur ulang.
-  - Untuk sistem ini, gunakan hanya tiga kategori utama.
-
-  Berikan hasil JSON dengan format:
-
-  {
-    "teridentifikasi": true,
-    "kategori": "Sampah Anorganik",
-    "jenis": "Tisu Kertas",
-    "poin": 20,
-    "deskripsi": "Panduan pengolahan sampah."
-  }
-
-  Jika objek tidak dapat dikenali:
-
-  {
-    "teridentifikasi": false,
-    "kategori": "",
-    "jenis": "Tidak diketahui",
-    "poin": 0,
-    "deskripsi": "Objek tidak dapat diidentifikasi."
-  }
-
-  Poin harus berada pada rentang 10 sampai 30
-  jika objek berhasil diidentifikasi.
-`;
-
-// Helper pemanggilan Gemini dengan fallback model saat 503 (high demand)
-async function callGeminiScan(base64Image, mimeType) {
-  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-4-hydrogen'];
-  let lastError;
-
-  for (const modelName of modelsToTry) {
-    try {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        config: {
-          temperature: 0.1,
-          responseMimeType: 'application/json',
-          systemInstruction
-        },
-        contents: [
-          {
-            inlineData: {
-              data: base64Image,
-              mimeType: mimeType
-            }
-          },
-          { text: promptText }
-        ]
-      });
-      return response;
-    } catch (err) {
-      lastError = err;
-      const statusCode = err?.status || err?.error?.code;
-      const errMessage = String(err?.message || '').toLowerCase();
-      const isHighDemand =
-        statusCode === 503 ||
-        errMessage.includes('503') ||
-        errMessage.includes('high demand') ||
-        errMessage.includes('unavailable');
-
-      if (!isHighDemand) {
-        throw err;
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-
-  throw lastError;
-}
+const upload = multer({ storage: storage });
 
 // --- ENDPOINT API ---
 
@@ -155,7 +41,7 @@ async function callGeminiScan(base64Image, mimeType) {
 app.post('/api/login', (req, res) => {
   const { nama, kelas } = req.body;
   if (!nama || !kelas) return res.status(400).json({ success: false, message: 'Nama dan kelas wajib diisi.' });
-
+  
   let user = usersMemory.find(u => u.nama === nama && u.kelas === kelas);
   if (!user) {
     user = { id: usersMemory.length + 1, nama, kelas, total_poin: 0 };
@@ -171,132 +57,194 @@ app.get('/api/leaderboard', (req, res) => {
 });
 
 // 3. Endpoint Smart Scan AI
-app.post('/api/scan', (req, res) => {
-  upload.single('image')(req, res, async (uploadErr) => {
-    try {
-      if (uploadErr) {
-        if (uploadErr.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({
-            success: false,
-            message: 'Ukuran gambar terlalu besar. Gunakan gambar maksimal 5 MB.'
-          });
-        }
-        return res.status(400).json({
-          success: false,
-          message: 'Gagal mengunggah gambar.'
-        });
-      }
+app.post('/api/scan', upload.single('image'), async (req, res) => {
+  try {
+    const userId = req.body.user_id;
 
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({
-          success: false,
-          message: 'Konfigurasi GEMINI_API_KEY belum diatur di server.'
-        });
-      }
-
-      const userId = req.body.user_id;
-
-      // Validasi foto
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Data foto tidak ditemukan.'
-        });
-      }
-
-      const mimeType = req.file.mimetype || 'image/jpeg';
-
-      // Pastikan format gambar valid
-      if (!mimeType.startsWith('image/')) {
-        return res.status(400).json({
-          success: false,
-          message: 'File yang diunggah harus berupa gambar.'
-        });
-      }
-
-      const imageBuffer = fs.readFileSync(req.file.path);
-      const base64Image = imageBuffer.toString('base64');
-
-      // Kirim gambar ke Gemini AI dengan fallback model
-      const response = await callGeminiScan(base64Image, mimeType);
-
-      // Ambil hasil AI
-      const rawText = response.text ? response.text.trim() : '';
-
-      if (!rawText) {
-        throw new Error('Gemini tidak memberikan respons.');
-      }
-
-      const aiResult = JSON.parse(rawText);
-
-      // Validasi hasil identifikasi
-      if (aiResult.teridentifikasi !== true) {
-        return res.status(422).json({
-          success: false,
-          message: 'Objek belum dapat dikenali. Silakan foto ulang dengan pencahayaan yang lebih baik.'
-        });
-      }
-
-      const kategoriValid = [
-        'Sampah Organik',
-        'Sampah Anorganik',
-        'Sampah B3'
-      ];
-
-      if (!kategoriValid.includes(aiResult.kategori)) {
-        throw new Error('Kategori AI tidak valid.');
-      }
-
-      if (
-        typeof aiResult.jenis !== 'string' ||
-        !aiResult.jenis.trim() ||
-        !Number.isFinite(Number(aiResult.poin)) ||
-        Number(aiResult.poin) < 10 ||
-        Number(aiResult.poin) > 30
-      ) {
-        throw new Error('Data hasil klasifikasi tidak valid.');
-      }
-
-      // Susun hasil untuk frontend
-      const finalKategori = `${aiResult.kategori} - ${aiResult.jenis}`;
-      const finalPoin = Number(aiResult.poin);
-      const finalDeskripsi = aiResult.deskripsi || 'Kelola sampah sesuai jenisnya.';
-
-      // Tambahkan poin hanya jika klasifikasi berhasil
-      if (userId) {
-        const user = usersMemory.find(u => u.id == userId);
-        if (user) {
-          user.total_poin += finalPoin;
-        }
-      }
-
-      // Kirim hasil ke frontend
-      return res.json({
-        success: true,
-        kategori: finalKategori,
-        poin: finalPoin,
-        deskripsi: finalDeskripsi
-      });
-
-    } catch (error) {
-      console.error('SMART SCAN ERROR:', error);
-
-      return res.status(502).json({
+    // Validasi foto
+    if (!req.file) {
+      return res.status(400).json({
         success: false,
-        message: 'AI gagal memproses gambar. Silakan coba kembali.'
+        message: 'Data foto tidak ditemukan.'
       });
+    }
 
-    } finally {
-      // Hapus file sementara setelah selesai diproses
-      if (req.file && fs.existsSync(req.file.path)) {
-        try {
-          fs.unlinkSync(req.file.path);
-        } catch (cleanupError) {
-          console.error('Gagal menghapus file sementara:', cleanupError);
+    const imageBuffer = fs.readFileSync(req.file.path);
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = req.file.mimetype || 'image/jpeg';
+
+    // Pastikan format gambar valid
+    if (!mimeType.startsWith('image/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'File yang diunggah harus berupa gambar.'
+      });
+    }
+
+    // Kirim gambar ke Gemini AI
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+
+      config: {
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+
+        systemInstruction: `
+          Kamu adalah AI Computer Vision khusus
+          untuk mengidentifikasi dan mengklasifikasikan sampah.
+
+          Analisis objek berdasarkan gambar yang benar-benar
+          diberikan pengguna.
+
+          Jangan menebak objek yang tidak terlihat jelas.
+          Jangan selalu menganggap objek sebagai plastik.
+          Identifikasi material dan bentuk objek terlebih dahulu.
+        `
+      },
+
+      contents: [
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: mimeType
+          }
+        },
+        {
+          text: `
+            Identifikasi objek sampah pada gambar.
+
+            Pilih SATU kategori utama dari tiga kategori berikut:
+
+            1. Sampah Organik
+               Contoh: sisa makanan, daun, kulit buah.
+
+            2. Sampah Anorganik
+               Contoh: botol plastik, kertas, kardus,
+               kaleng, kaca, dan kemasan.
+
+            3. Sampah B3
+               Contoh: baterai bekas, lampu neon,
+               limbah bahan kimia, dan benda berbahaya.
+
+            ATURAN PENTING:
+            - Kenali objek sesuai gambar, bukan berdasarkan contoh.
+            - Jangan otomatis memilih plastik.
+            - Bedakan kertas, tisu, plastik, logam, dan kaca.
+            - Jika objek tidak dapat dikenali, nyatakan
+              bahwa objek tidak dapat diidentifikasi.
+            - Jangan mengarang material yang tidak terlihat.
+            - Tisu kertas yang kotor tidak boleh dianggap
+              sebagai bahan yang dapat didaur ulang.
+            - Untuk sistem ini, gunakan hanya tiga kategori utama.
+
+            Berikan hasil JSON dengan format:
+
+            {
+              "teridentifikasi": true,
+              "kategori": "Sampah Anorganik",
+              "jenis": "Tisu Kertas",
+              "poin": 20,
+              "deskripsi": "Panduan pengolahan sampah."
+            }
+
+            Jika objek tidak dapat dikenali:
+
+            {
+              "teridentifikasi": false,
+              "kategori": "",
+              "jenis": "Tidak diketahui",
+              "poin": 0,
+              "deskripsi": "Objek tidak dapat diidentifikasi."
+            }
+
+            Poin harus berada pada rentang 10 sampai 30
+            jika objek berhasil diidentifikasi.
+          `
         }
+      ]
+    });
+
+    // Ambil hasil AI
+    const rawText = response.text ? response.text.trim() : '';
+
+    if (!rawText) {
+      throw new Error('Gemini tidak memberikan respons.');
+    }
+
+    const aiResult = JSON.parse(rawText);
+
+    // Validasi hasil identifikasi
+    if (aiResult.teridentifikasi !== true) {
+      return res.status(422).json({
+        success: false,
+        message: 'Objek belum dapat dikenali. Silakan foto ulang dengan pencahayaan yang lebih baik.'
+      });
+    }
+
+    const kategoriValid = [
+      'Sampah Organik',
+      'Sampah Anorganik',
+      'Sampah B3'
+    ];
+
+    if (!kategoriValid.includes(aiResult.kategori)) {
+      throw new Error('Kategori AI tidak valid.');
+    }
+
+    if (
+      typeof aiResult.jenis !== 'string' ||
+      !aiResult.jenis.trim() ||
+      !Number.isFinite(Number(aiResult.poin)) ||
+      Number(aiResult.poin) < 10 ||
+      Number(aiResult.poin) > 30
+    ) {
+      throw new Error('Data hasil klasifikasi tidak valid.');
+    }
+
+    // Susun hasil untuk frontend
+    const finalKategori =
+      `${aiResult.kategori} - ${aiResult.jenis}`;
+
+    const finalPoin = Number(aiResult.poin);
+
+    const finalDeskripsi =
+      aiResult.deskripsi || 'Kelola sampah sesuai jenisnya.';
+
+    // Tambahkan poin hanya jika klasifikasi berhasil
+    if (userId) {
+      const user = usersMemory.find(u => u.id == userId);
+
+      if (user) {
+        user.total_poin += finalPoin;
       }
     }
-  });
+
+    // Kirim hasil ke frontend
+    return res.json({
+      success: true,
+      kategori: finalKategori,
+      poin: finalPoin,
+      deskripsi: finalDeskripsi
+    });
+
+  } catch (error) {
+    console.error('SMART SCAN ERROR:', error);
+
+    return res.status(502).json({
+      success: false,
+      message: 'AI gagal memproses gambar. Silakan coba kembali.'
+    });
+
+  } finally {
+    // Hapus file sementara setelah selesai diproses
+     if (req.file && fs.existsSync(req.file.path)) {
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (cleanupError) {
+      console.error('Gagal menghapus file sementara:', cleanupError);
+    }
+  }
+}
 });
 
 // 4. Endpoint Tambah Poin & Simpan Riwayat Kuis
